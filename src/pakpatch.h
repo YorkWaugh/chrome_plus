@@ -28,7 +28,10 @@ HANDLE WINAPI MyMapViewOfFile(_In_ HANDLE hFileMappingObject,
 
     // No more hook needed.
     resources_pak_map = nullptr;
-    MH_DisableHook(MapViewOfFile);
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourDetach((LPVOID*)&RawMapViewOfFile, MyMapViewOfFile);
+    DetourTransactionCommit();
 
     if (buffer) {
       // Traverse the gzip file.
@@ -105,12 +108,15 @@ HANDLE WINAPI MyCreateFileMapping(_In_ HANDLE hFile,
 
     // No more hook needed.
     resources_pak_file = nullptr;
-    MH_DisableHook(CreateFileMappingW);
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourDetach((LPVOID*)&RawCreateFileMapping, MyCreateFileMapping);
+    DetourTransactionCommit();
 
-    if (MH_CreateHook(MapViewOfFile, MyMapViewOfFile,
-                      (LPVOID*)&RawMapViewOfFile) == MH_OK) {
-      MH_EnableHook(MapViewOfFile);
-    }
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach((LPVOID*)&RawMapViewOfFile, MyMapViewOfFile);
+    DetourTransactionCommit();
 
     return resources_pak_map;
   }
@@ -144,26 +150,26 @@ HANDLE WINAPI MyCreateFile(_In_ LPCTSTR lpFileName,
     resources_pak_file = file;
     resources_pak_size = GetFileSize(resources_pak_file, nullptr);
 
-    if (MH_CreateHook(CreateFileMappingW, MyCreateFileMapping,
-                      (LPVOID*)&RawCreateFileMapping) == MH_OK) {
-      MH_EnableHook(CreateFileMappingW);
-    }
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach((LPVOID*)&RawCreateFileMapping, MyCreateFileMapping);
+    DetourTransactionCommit();
 
     // No more hook needed.
-    MH_DisableHook(CreateFileW);
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourDetach((LPVOID*)&RawCreateFile, MyCreateFile);
+    DetourTransactionCommit();
   }
 
   return file;
 }
 
 void PakPatch() {
-  MH_STATUS status =
-      MH_CreateHook(CreateFileW, MyCreateFile, (LPVOID*)&RawCreateFile);
-  if (status == MH_OK) {
-    MH_EnableHook(CreateFileW);
-  } else {
-    DebugLog(L"MH_CreateHook CreateFileW failed:%d", status);
-  }
+  DetourTransactionBegin();
+  DetourUpdateThread(GetCurrentThread());
+  DetourAttach((LPVOID*)&RawCreateFile, MyCreateFile);
+  DetourTransactionCommit();
 }
 
 #endif  // PAKPATCH_H_

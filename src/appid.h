@@ -28,14 +28,10 @@ void SetAppId() {
 
   PBYTE PSStringFromPropertyKey =
       (PBYTE)GetProcAddress(Propsys, "PSStringFromPropertyKey");
-  MH_STATUS status =
-      MH_CreateHook(PSStringFromPropertyKey, MyPSStringFromPropertyKey,
-                    (LPVOID*)&RawPSStringFromPropertyKey);
-  if (status == MH_OK) {
-    MH_EnableHook(PSStringFromPropertyKey);
-  } else {
-    DebugLog(L"MH_CreateHook PSStringFromPropertyKey failed:%d", status);
-  }
+  DetourTransactionBegin();
+  DetourUpdateThread(GetCurrentThread());
+  DetourAttach((LPVOID*)&RawPSStringFromPropertyKey, MyPSStringFromPropertyKey);
+  DetourTransactionCommit();
 }
 
 #endif  // APPID_H_

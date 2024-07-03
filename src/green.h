@@ -123,8 +123,10 @@ NET_API_STATUS WINAPI MyNetUserGetInfo(LPCWSTR servername,
   (0x00000001ui64 << 44)
 #endif
 
-// #ifndef PROCESS_CREATION_MITIGATION_POLICY_WIN32K_SYSTEM_CALL_DISABLE_ALWAYS_ON
-// #define PROCESS_CREATION_MITIGATION_POLICY_WIN32K_SYSTEM_CALL_DISABLE_ALWAYS_ON \
+// #ifndef
+// PROCESS_CREATION_MITIGATION_POLICY_WIN32K_SYSTEM_CALL_DISABLE_ALWAYS_ON
+// #define
+// PROCESS_CREATION_MITIGATION_POLICY_WIN32K_SYSTEM_CALL_DISABLE_ALWAYS_ON \
 //   (0x00000001ui64 << 28)
 // #endif
 
@@ -169,20 +171,15 @@ void MakeGreen() {
     PBYTE GetVolumeInformationW =
         (PBYTE)GetProcAddress(kernel32, "GetVolumeInformationW");
 
-    MH_STATUS status =
-        MH_CreateHook(GetComputerNameW, FakeGetComputerName, nullptr);
-    if (status == MH_OK) {
-      MH_EnableHook(GetComputerNameW);
-    } else {
-      DebugLog(L"MH_CreateHook GetComputerNameW failed:%d", status);
-    }
-    status =
-        MH_CreateHook(GetVolumeInformationW, FakeGetVolumeInformation, nullptr);
-    if (status == MH_OK) {
-      MH_EnableHook(GetVolumeInformationW);
-    } else {
-      DebugLog(L"MH_CreateHook GetVolumeInformationW failed:%d", status);
-    }
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach((LPVOID*)&GetComputerNameW, FakeGetComputerName);
+    DetourTransactionCommit();
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach((LPVOID*)&GetVolumeInformationW, FakeGetVolumeInformation);
+    DetourTransactionCommit();
   }
 
   // components/os_crypt/os_crypt_win.cc
@@ -192,70 +189,53 @@ void MakeGreen() {
     PBYTE CryptUnprotectData =
         (PBYTE)GetProcAddress(Crypt32, "CryptUnprotectData");
 
-    MH_STATUS status =
-        MH_CreateHook(CryptProtectData, MyCryptProtectData, nullptr);
-    if (status == MH_OK) {
-      MH_EnableHook(CryptProtectData);
-    } else {
-      DebugLog(L"MH_CreateHook CryptProtectData failed:%d", status);
-    }
-    status = MH_CreateHook(CryptUnprotectData, MyCryptUnprotectData,
-                           (LPVOID*)&RawCryptUnprotectData);
-    if (status == MH_OK) {
-      MH_EnableHook(CryptUnprotectData);
-    } else {
-      DebugLog(L"MH_CreateHook CryptUnprotectData failed:%d", status);
-    }
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach((LPVOID*)&CryptProtectData, MyCryptProtectData);
+    DetourTransactionCommit();
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach((LPVOID*)&CryptUnprotectData, MyCryptUnprotectData);
+    DetourTransactionCommit();
   }
 
   HMODULE Advapi32 = LoadLibraryW(L"Advapi32.dll");
   if (Advapi32) {
     PBYTE LogonUserW = (PBYTE)GetProcAddress(Advapi32, "LogonUserW");
 
-    MH_STATUS status =
-        MH_CreateHook(LogonUserW, MyLogonUserW, (LPVOID*)&RawLogonUserW);
-    if (status == MH_OK) {
-      MH_EnableHook(LogonUserW);
-    } else {
-      DebugLog(L"MH_CreateHook LogonUserW failed:%d", status);
-    }
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach((LPVOID*)&LogonUserW, MyLogonUserW);
+    DetourTransactionCommit();
   }
 
   HMODULE Shlwapi = LoadLibraryW(L"Shlwapi.dll");
   if (Shlwapi) {
     PBYTE IsOS = (PBYTE)GetProcAddress(Shlwapi, "IsOS");
 
-    MH_STATUS status = MH_CreateHook(IsOS, MyIsOS, (LPVOID*)&RawIsOS);
-    if (status == MH_OK) {
-      MH_EnableHook(IsOS);
-    } else {
-      DebugLog(L"MH_CreateHook IsOS failed:%d", status);
-    }
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach((LPVOID*)&IsOS, MyIsOS);
+    DetourTransactionCommit();
   }
 
   HMODULE Netapi32 = LoadLibraryW(L"Netapi32.dll");
   if (Netapi32) {
     PBYTE NetUserGetInfo = (PBYTE)GetProcAddress(Netapi32, "NetUserGetInfo");
 
-    MH_STATUS status = MH_CreateHook(NetUserGetInfo, MyNetUserGetInfo,
-                                     (LPVOID*)&RawNetUserGetInfo);
-    if (status == MH_OK) {
-      MH_EnableHook(NetUserGetInfo);
-    } else {
-      DebugLog(L"MH_CreateHook NetUserGetInfo failed:%d", status);
-    }
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach((LPVOID*)&NetUserGetInfo, MyNetUserGetInfo);
+    DetourTransactionCommit();
   }
 
   LPVOID ppUpdateProcThreadAttribute = nullptr;
-  MH_STATUS status = MH_CreateHookApiEx(
-      L"kernel32", "UpdateProcThreadAttribute", &MyUpdateProcThreadAttribute,
-      (LPVOID*)&RawUpdateProcThreadAttribute, &ppUpdateProcThreadAttribute);
-  if (status == MH_OK) {
-    MH_EnableHook(ppUpdateProcThreadAttribute);
-  } else {
-    DebugLog(L"MH_CreateHookApiEx UpdateProcThreadAttribute failed: %d",
-             status);
-  }
+  DetourTransactionBegin();
+  DetourUpdateThread(GetCurrentThread());
+  DetourAttach((LPVOID*)&RawUpdateProcThreadAttribute,
+               MyUpdateProcThreadAttribute);
+  DetourTransactionCommit();
 }
 
 #endif  // GREEN_H_

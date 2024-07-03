@@ -6,7 +6,7 @@ HMODULE hInstance;
 
 #define MAGIC_CODE 0x1603ABD9
 
-#include "MinHook.h"
+#include "detours.h"
 #include "version.h"
 
 #include "hijack.h"
@@ -70,20 +70,15 @@ void InstallLoader() {
                        sizeof(MODULEINFO));
   PBYTE entry = (PBYTE)mi.EntryPoint;
 
-  // Jump from the original entry to the loader.
-  MH_STATUS status = MH_CreateHook(entry, Loader, (LPVOID*)&ExeMain);
-  if (status == MH_OK) {
-    MH_EnableHook(entry);
-  } else {
-    DebugLog(L"MH_CreateHook InstallLoader failed:%d", status);
-  }
+  DetourTransactionBegin();
+  DetourUpdateThread(GetCurrentThread());
+  DetourAttach((LPVOID*)&ExeMain, Loader);
+  DetourTransactionCommit();
 }
-#define EXTERNC extern "C"
 
-//
-EXTERNC __declspec(dllexport) void portable() {}
+__declspec(dllexport) void portable() {/*...*/}
 
-EXTERNC BOOL WINAPI DllMain(HINSTANCE hModule, DWORD dwReason, LPVOID pv) {
+BOOL WINAPI DllMain(HINSTANCE hModule, DWORD dwReason, LPVOID pv) {
   if (dwReason == DLL_PROCESS_ATTACH) {
     DisableThreadLibraryCalls(hModule);
     hInstance = hModule;
@@ -91,13 +86,7 @@ EXTERNC BOOL WINAPI DllMain(HINSTANCE hModule, DWORD dwReason, LPVOID pv) {
     // Maintain the original function of system DLLs.
     LoadSysDll(hModule);
 
-    // Install the loader after successfully initializing MinHook.
-    MH_STATUS status = MH_Initialize();
-    if (status == MH_OK) {
-      InstallLoader();
-    } else {
-      DebugLog(L"MH_Initialize failed:%d", status);
-    }
+    InstallLoader();
   }
   return TRUE;
 }

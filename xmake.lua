@@ -20,14 +20,8 @@ add_links("advapi32", "shell32", "ole32", "oleaut32", "uuid", "odbc32", "odbccp3
 
 target("detours")
     set_kind("static")
-    if os.arch() == "x64" then
-        add_linkdirs("detours/lib.x64", {public=true})
-    elseif os.arch() == "x86" then
-        add_linkdirs("detours/lib.x86", {public=true})
-    elseif os.arch() == "arm64" then
-        add_linkdirs("detours/lib.arm64", {public=true})
-    end
-    add_includedirs("detours/include", {public=true})
+    add_files("detours/src/*.cpp|uimports.cpp")
+    add_includedirs("detours/src", {public = true})
 
 target("chrome_plus")
     set_kind("shared")

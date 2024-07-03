@@ -74,13 +74,12 @@ void MakePatch() {
   // }
   HMODULE ntdll = GetModuleHandle(L"ntdll.dll");
   if (ntdll) {
-    PBYTE LdrLoadDll = (PBYTE)GetProcAddress(ntdll, "LdrLoadDll");
-    MH_STATUS status =
-        MH_CreateHook(LdrLoadDll, MyLdrLoadDll, (LPVOID*)&RawLdrLoadDll);
-    if (status == MH_OK) {
-      MH_EnableHook(LdrLoadDll);
-    } else {
-      DebugLog(L"MH_CreateHook LdrLoadDll failed:%d", status);
+    RawLdrLoadDll = (pLdrLoadDll)GetProcAddress(ntdll, "LdrLoadDll");
+    if (RawLdrLoadDll) {
+      DetourTransactionBegin();
+      DetourUpdateThread(GetCurrentThread());
+      DetourAttach((LPVOID*)&RawLdrLoadDll, MyLdrLoadDll);
+      DetourTransactionCommit();
     }
   }
 }
