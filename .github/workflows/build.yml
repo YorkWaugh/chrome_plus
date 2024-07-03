@@ -30,12 +30,6 @@ jobs:
     - name: Setup Xmake
       uses: xmake-io/github-action-setup-xmake@v1
 
-    - name: Compile Detours
-      run: |
-        cd detours/src
-        nmake
-        cd ../..
-
     - name: Configure Xmake
       run: xmake f -a ${{ matrix.arch }}
 
