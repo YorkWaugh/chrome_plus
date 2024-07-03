@@ -24,7 +24,7 @@ HRESULT WINAPI MyPSStringFromPropertyKey(REFPROPERTYKEY pkey,
 }
 
 void SetAppId() {
-  HMODULE Propsys = LoadLibrary(L"Propsys.dll");
+  HMODULE Propsys = LoadLibraryW(L"Propsys.dll");
 
   RawPSStringFromPropertyKey =
       (pPSStringFromPropertyKey)GetProcAddress(Propsys, "PSStringFromPropertyKey");

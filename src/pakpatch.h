@@ -31,7 +31,12 @@ HANDLE WINAPI MyMapViewOfFile(_In_ HANDLE hFileMappingObject,
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourDetach((LPVOID*)&RawMapViewOfFile, MyMapViewOfFile);
-    DetourTransactionCommit();
+    auto status = DetourTransactionCommit();
+    if (status != NO_ERROR) {
+      DebugLog(L"Unhook RawMapViewOfFile failed %d", status);
+    } else {
+      DebugLog(L"Unhook RawMapViewOfFile success");
+    }
 
     if (buffer) {
       // Traverse the gzip file.
@@ -111,12 +116,22 @@ HANDLE WINAPI MyCreateFileMapping(_In_ HANDLE hFile,
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourDetach((LPVOID*)&RawCreateFileMapping, MyCreateFileMapping);
-    DetourTransactionCommit();
+    auto status = DetourTransactionCommit();
+    if (status != NO_ERROR) {
+      DebugLog(L"Unhook RawCreateFileMapping failed %d", status);
+    } else {
+      DebugLog(L"Unhook RawCreateFileMapping success");
+    }
 
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourAttach((LPVOID*)&RawMapViewOfFile, MyMapViewOfFile);
-    DetourTransactionCommit();
+    status = DetourTransactionCommit();
+    if (status != NO_ERROR) {
+      DebugLog(L"Hook RawMapViewOfFile failed %d", status);
+    } else {
+      DebugLog(L"Hook RawMapViewOfFile success");
+    }
 
     return resources_pak_map;
   }
@@ -153,23 +168,49 @@ HANDLE WINAPI MyCreateFile(_In_ LPCTSTR lpFileName,
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourAttach((LPVOID*)&RawCreateFileMapping, MyCreateFileMapping);
-    DetourTransactionCommit();
+    auto status = DetourTransactionCommit();
+    if (status != NO_ERROR) {
+      DebugLog(L"Hook RawCreateFileMapping failed %d", status);
+    } else {
+      DebugLog(L"Hook RawCreateFileMapping success");
+    }
 
     // No more hook needed.
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourDetach((LPVOID*)&RawCreateFile, MyCreateFile);
-    DetourTransactionCommit();
+    status = DetourTransactionCommit();
+    if (status != NO_ERROR) {
+      DebugLog(L"Unhook RawCreateFile failed %d", status);
+    } else {
+      DebugLog(L"Unhook RawCreateFile success");
+    }
   }
 
   return file;
 }
 
 void PakPatch() {
-  DetourTransactionBegin();
-  DetourUpdateThread(GetCurrentThread());
-  DetourAttach((LPVOID*)&RawCreateFile, MyCreateFile);
-  DetourTransactionCommit();
+  HMODULE kernel32 = LoadLibraryW(L"kernel32.dll");
+  if (kernel32) {
+    RawCreateFile = (pCreateFile)GetProcAddress(kernel32, "CreateFileW");
+    RawCreateFileMapping =
+        (pCreateFileMapping)GetProcAddress(kernel32, "CreateFileMappingW");
+    RawMapViewOfFile =
+        (pMapViewOfFile)GetProcAddress(kernel32, "MapViewOfFile");
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach((LPVOID*)&RawCreateFile, MyCreateFile);
+    auto status = DetourTransactionCommit();
+    if (status != NO_ERROR) {
+      DebugLog(L"Hook RawCreateFile failed %d", status);
+    } else {
+      DebugLog(L"Hook RawCreateFile success");
+    }
+  } else {
+    DebugLog(L"LoadLibraryW kernel32.dll failed");
+  }
 }
 
 #endif  // PAKPATCH_H_
