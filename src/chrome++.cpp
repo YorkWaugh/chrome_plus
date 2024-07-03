@@ -68,7 +68,7 @@ void InstallLoader() {
   MODULEINFO mi;
   GetModuleInformation(GetCurrentProcess(), GetModuleHandle(nullptr), &mi,
                        sizeof(MODULEINFO));
-  PBYTE entry = (PBYTE)mi.EntryPoint;
+  ExeMain = (Startup)mi.EntryPoint;
 
   DetourTransactionBegin();
   DetourUpdateThread(GetCurrentThread());
