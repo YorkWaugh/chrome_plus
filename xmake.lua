@@ -21,7 +21,7 @@ add_links("advapi32", "shell32", "ole32", "oleaut32", "uuid", "odbc32", "odbccp3
 target("detours")
     set_kind("static")
     add_files("detours/src/*.cpp|uimports.cpp")
-    add_includedirs("detours/src", {public = true})
+    add_includedirs("detours/src", {public=true})
 
 target("chrome_plus")
     set_kind("shared")
