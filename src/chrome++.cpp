@@ -73,10 +73,13 @@ void InstallLoader() {
   DetourTransactionBegin();
   DetourUpdateThread(GetCurrentThread());
   DetourAttach((LPVOID*)&ExeMain, Loader);
-  DetourTransactionCommit();
+  auto status = DetourTransactionCommit();
+  if (status != NO_ERROR) {
+    DebugLog(L"InstallLoader failed: %d", status);
+  }
 }
 
-__declspec(dllexport) void portable() {/*...*/}
+__declspec(dllexport) void portable() {}
 
 BOOL WINAPI DllMain(HINSTANCE hModule, DWORD dwReason, LPVOID pv) {
   if (dwReason == DLL_PROCESS_ATTACH) {

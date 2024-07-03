@@ -26,12 +26,15 @@ HRESULT WINAPI MyPSStringFromPropertyKey(REFPROPERTYKEY pkey,
 void SetAppId() {
   HMODULE Propsys = LoadLibrary(L"Propsys.dll");
 
-  PBYTE PSStringFromPropertyKey =
-      (PBYTE)GetProcAddress(Propsys, "PSStringFromPropertyKey");
+  RawPSStringFromPropertyKey =
+      (pPSStringFromPropertyKey)GetProcAddress(Propsys, "PSStringFromPropertyKey");
   DetourTransactionBegin();
   DetourUpdateThread(GetCurrentThread());
   DetourAttach((LPVOID*)&RawPSStringFromPropertyKey, MyPSStringFromPropertyKey);
-  DetourTransactionCommit();
+  auto status = DetourTransactionCommit();
+  if (status != NO_ERROR) {
+    DebugLog(L"SetAppId failed %d", status);
+  }
 }
 
 #endif  // APPID_H_

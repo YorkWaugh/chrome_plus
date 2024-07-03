@@ -79,7 +79,10 @@ void MakePatch() {
       DetourTransactionBegin();
       DetourUpdateThread(GetCurrentThread());
       DetourAttach((LPVOID*)&RawLdrLoadDll, MyLdrLoadDll);
-      DetourTransactionCommit();
+      auto status = DetourTransactionCommit();
+      if (status != NO_ERROR) {
+        DebugLog(L"Hook LdrLoadDll failed %d", status);
+      }
     }
   }
 }

@@ -166,6 +166,8 @@ BOOL WINAPI MyUpdateProcThreadAttribute(
 void MakeGreen() {
   HMODULE kernel32 = LoadLibraryW(L"kernel32.dll");
   if (kernel32) {
+    PBYTE UpdateProcThreadAttribute =
+        (PBYTE)GetProcAddress(kernel32, "UpdateProcThreadAttribute");
     PBYTE GetComputerNameW =
         (PBYTE)GetProcAddress(kernel32, "GetComputerNameW");
     PBYTE GetVolumeInformationW =
@@ -173,13 +175,28 @@ void MakeGreen() {
 
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
+    DetourAttach((LPVOID*)&UpdateProcThreadAttribute,
+                 MyUpdateProcThreadAttribute);
+    auto status = DetourTransactionCommit();
+    if (status != NO_ERROR) {
+      DebugLog(L"Hook UpdateProcThreadAttribute failed %d", status);
+    }
+
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
     DetourAttach((LPVOID*)&GetComputerNameW, FakeGetComputerName);
-    DetourTransactionCommit();
+    status = DetourTransactionCommit();
+    if (status != NO_ERROR) {
+      DebugLog(L"Hook GetComputerNameW failed %d", status);
+    }
 
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourAttach((LPVOID*)&GetVolumeInformationW, FakeGetVolumeInformation);
-    DetourTransactionCommit();
+    status = DetourTransactionCommit();
+    if (status != NO_ERROR) {
+      DebugLog(L"Hook GetVolumeInformationW failed %d", status);
+    }
   }
 
   // components/os_crypt/os_crypt_win.cc
@@ -192,12 +209,18 @@ void MakeGreen() {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourAttach((LPVOID*)&CryptProtectData, MyCryptProtectData);
-    DetourTransactionCommit();
+    auto status = DetourTransactionCommit();
+    if (status != NO_ERROR) {
+      DebugLog(L"Hook CryptProtectData failed %d", status);
+    }
 
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourAttach((LPVOID*)&CryptUnprotectData, MyCryptUnprotectData);
-    DetourTransactionCommit();
+    status = DetourTransactionCommit();
+    if (status != NO_ERROR) {
+      DebugLog(L"Hook CryptUnprotectData failed %d", status);
+    }
   }
 
   HMODULE Advapi32 = LoadLibraryW(L"Advapi32.dll");
@@ -207,7 +230,10 @@ void MakeGreen() {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourAttach((LPVOID*)&LogonUserW, MyLogonUserW);
-    DetourTransactionCommit();
+    auto status = DetourTransactionCommit();
+    if (status != NO_ERROR) {
+      DebugLog(L"Hook LogonUserW failed %d", status);
+    }
   }
 
   HMODULE Shlwapi = LoadLibraryW(L"Shlwapi.dll");
@@ -217,7 +243,10 @@ void MakeGreen() {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourAttach((LPVOID*)&IsOS, MyIsOS);
-    DetourTransactionCommit();
+    auto status = DetourTransactionCommit();
+    if (status != NO_ERROR) {
+      DebugLog(L"Hook IsOS failed %d", status);
+    }
   }
 
   HMODULE Netapi32 = LoadLibraryW(L"Netapi32.dll");
@@ -227,15 +256,11 @@ void MakeGreen() {
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourAttach((LPVOID*)&NetUserGetInfo, MyNetUserGetInfo);
-    DetourTransactionCommit();
+    auto status = DetourTransactionCommit();
+    if (status != NO_ERROR) {
+      DebugLog(L"Hook NetUserGetInfo failed %d", status);
+    }
   }
-
-  LPVOID ppUpdateProcThreadAttribute = nullptr;
-  DetourTransactionBegin();
-  DetourUpdateThread(GetCurrentThread());
-  DetourAttach((LPVOID*)&RawUpdateProcThreadAttribute,
-               MyUpdateProcThreadAttribute);
-  DetourTransactionCommit();
 }
 
 #endif  // GREEN_H_
