@@ -5,10 +5,7 @@
 #include <propvarutil.h>
 #include <shobjidl.h>
 
-typedef HRESULT(WINAPI* pPSStringFromPropertyKey)(REFPROPERTYKEY pkey,
-                                                  LPWSTR psz,
-                                                  UINT cch);
-pPSStringFromPropertyKey RawPSStringFromPropertyKey = nullptr;
+auto RawPSStringFromPropertyKey = PSStringFromPropertyKey;
 
 HRESULT WINAPI MyPSStringFromPropertyKey(REFPROPERTYKEY pkey,
                                          LPWSTR psz,
@@ -24,10 +21,6 @@ HRESULT WINAPI MyPSStringFromPropertyKey(REFPROPERTYKEY pkey,
 }
 
 void SetAppId() {
-  HMODULE Propsys = LoadLibraryW(L"Propsys.dll");
-
-  RawPSStringFromPropertyKey =
-      (pPSStringFromPropertyKey)GetProcAddress(Propsys, "PSStringFromPropertyKey");
   DetourTransactionBegin();
   DetourUpdateThread(GetCurrentThread());
   DetourAttach((LPVOID*)&RawPSStringFromPropertyKey, MyPSStringFromPropertyKey);
