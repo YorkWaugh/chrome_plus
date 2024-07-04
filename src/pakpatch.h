@@ -4,16 +4,12 @@
 #include "pakfile.h"
 
 DWORD resources_pak_size = 0;
-
 HANDLE resources_pak_map = nullptr;
+HANDLE resources_pak_file = nullptr;
 
-typedef HANDLE(WINAPI* pMapViewOfFile)(_In_ HANDLE hFileMappingObject,
-                                       _In_ DWORD dwDesiredAccess,
-                                       _In_ DWORD dwFileOffsetHigh,
-                                       _In_ DWORD dwFileOffsetLow,
-                                       _In_ SIZE_T dwNumberOfBytesToMap);
-
-pMapViewOfFile RawMapViewOfFile = nullptr;
+auto RawCreateFile = CreateFileW;
+auto RawCreateFileMapping = CreateFileMappingW;
+auto RawMapViewOfFile = MapViewOfFile;
 
 HANDLE WINAPI MyMapViewOfFile(_In_ HANDLE hFileMappingObject,
                               _In_ DWORD dwDesiredAccess,
@@ -87,18 +83,6 @@ HANDLE WINAPI MyMapViewOfFile(_In_ HANDLE hFileMappingObject,
                           dwFileOffsetLow, dwNumberOfBytesToMap);
 }
 
-HANDLE resources_pak_file = nullptr;
-
-typedef HANDLE(WINAPI* pCreateFileMapping)(_In_ HANDLE hFile,
-                                           _In_opt_ LPSECURITY_ATTRIBUTES
-                                               lpAttributes,
-                                           _In_ DWORD flProtect,
-                                           _In_ DWORD dwMaximumSizeHigh,
-                                           _In_ DWORD dwMaximumSizeLow,
-                                           _In_opt_ LPCTSTR lpName);
-
-pCreateFileMapping RawCreateFileMapping = nullptr;
-
 HANDLE WINAPI MyCreateFileMapping(_In_ HANDLE hFile,
                                   _In_opt_ LPSECURITY_ATTRIBUTES lpAttributes,
                                   _In_ DWORD flProtect,
@@ -138,17 +122,6 @@ HANDLE WINAPI MyCreateFileMapping(_In_ HANDLE hFile,
   return RawCreateFileMapping(hFile, lpAttributes, flProtect, dwMaximumSizeHigh,
                               dwMaximumSizeLow, lpName);
 }
-
-typedef HANDLE(WINAPI* pCreateFile)(_In_ LPCTSTR lpFileName,
-                                    _In_ DWORD dwDesiredAccess,
-                                    _In_ DWORD dwShareMode,
-                                    _In_opt_ LPSECURITY_ATTRIBUTES
-                                        lpSecurityAttributes,
-                                    _In_ DWORD dwCreationDisposition,
-                                    _In_ DWORD dwFlagsAndAttributes,
-                                    _In_opt_ HANDLE hTemplateFile);
-
-pCreateFile RawCreateFile = nullptr;
 
 HANDLE WINAPI MyCreateFile(_In_ LPCTSTR lpFileName,
                            _In_ DWORD dwDesiredAccess,
@@ -191,25 +164,14 @@ HANDLE WINAPI MyCreateFile(_In_ LPCTSTR lpFileName,
 }
 
 void PakPatch() {
-  HMODULE kernel32 = LoadLibraryW(L"kernel32.dll");
-  if (kernel32) {
-    RawCreateFile = (pCreateFile)GetProcAddress(kernel32, "CreateFileW");
-    RawCreateFileMapping =
-        (pCreateFileMapping)GetProcAddress(kernel32, "CreateFileMappingW");
-    RawMapViewOfFile =
-        (pMapViewOfFile)GetProcAddress(kernel32, "MapViewOfFile");
-
-    DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
-    DetourAttach((LPVOID*)&RawCreateFile, MyCreateFile);
-    auto status = DetourTransactionCommit();
-    if (status != NO_ERROR) {
-      DebugLog(L"Hook RawCreateFile failed %d", status);
-    } else {
-      DebugLog(L"Hook RawCreateFile success");
-    }
+  DetourTransactionBegin();
+  DetourUpdateThread(GetCurrentThread());
+  DetourAttach((LPVOID*)&RawCreateFile, MyCreateFile);
+  auto status = DetourTransactionCommit();
+  if (status != NO_ERROR) {
+    DebugLog(L"Hook RawCreateFile failed %d", status);
   } else {
-    DebugLog(L"LoadLibraryW kernel32.dll failed");
+    DebugLog(L"Hook RawCreateFile success");
   }
 }
 
