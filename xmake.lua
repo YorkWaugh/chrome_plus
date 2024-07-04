@@ -15,8 +15,9 @@ end
 
 add_cxflags("/utf-8")
 
-add_links("gdiplus", "kernel32", "user32", "gdi32", "winspool", "comdlg32")
-add_links("advapi32", "shell32", "ole32", "oleaut32", "uuid", "odbc32", "odbccp32")
+-- add_links("gdiplus", "kernel32", "user32", "gdi32", "winspool", "comdlg32")
+-- add_links("advapi32", "shell32", "ole32", "oleaut32", "uuid", "odbc32", "odbccp32")
+add_links("kernel32", "user32", "shell32", "oleaut32", "propsys", "shlwapi", "crypt32", "advapi32", "netapi32")
 
 target("detours")
     set_kind("static")
