@@ -58,7 +58,7 @@ HANDLE WINAPI MyMapViewOfFile(_In_ HANDLE hFileMappingObject,
                 R"(hidden="true")");
           }
 
-          const char prouct_title[] = u8R"({aboutBrowserVersion}</div><div class="secondary"><a target="_blank" href="https://github.com/Bush2021/chrome_plus">Chrome++</a> )" RELEASE_VER_STR u8R"( modified version</div>)";
+          const char prouct_title[] = u8R"({aboutBrowserVersion}</div><div class="secondary"><a target="_blank" href="https://github.com/Bush2021/chrome_plus">Chrome++</a> )" "alpha-37ede4d" u8R"( modified version</div>)";
           ReplaceStringInPlace(html, R"({aboutBrowserVersion}</div>)",
                                prouct_title);
 
