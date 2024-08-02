@@ -116,25 +116,26 @@ int HandleDoubleClick(WPARAM wParam, PMOUSEHOOKSTRUCT pmouse) {
     return 0;
   }
 
-  HWND hwnd = WindowFromPoint(pmouse->pt);
-  NodePtr top_container_view = HandleFindBar(hwnd, pmouse->pt);
+  POINT pt = pmouse->pt;
+  HWND hwnd = WindowFromPoint(pt);
+  NodePtr top_container_view = HandleFindBar(hwnd, pt);
   if (!top_container_view) {
     return 0;
   }
 
-  bool is_on_one_tab = IsOnOneTab(top_container_view, pmouse->pt);
+  bool is_on_one_tab = IsOnOneTab(top_container_view, pt);
+  bool is_on_close_button = IsOnCloseButton(top_container_view, pt);
   bool is_only_one_tab = IsOnlyOneTab(top_container_view);
-
-  if (is_on_one_tab) {
-    if (is_only_one_tab) {
-      ExecuteCommand(IDC_NEW_TAB, hwnd);
-      ExecuteCommand(IDC_WINDOW_CLOSE_OTHER_TABS, hwnd);
-    } else {
-      ExecuteCommand(IDC_CLOSE_TAB, hwnd);
-    }
-    return 1;
+  if (!is_on_one_tab || is_on_close_button) {
+    return 0;
   }
-  return 0;
+  if (is_only_one_tab) {
+    ExecuteCommand(IDC_NEW_TAB, hwnd);
+    ExecuteCommand(IDC_WINDOW_CLOSE_OTHER_TABS, hwnd);
+  } else {
+    ExecuteCommand(IDC_CLOSE_TAB, hwnd);
+  }
+  return 1;
 }
 
 // Right-click to close tab (Hold Shift to show the original menu).
@@ -144,13 +145,14 @@ int HandleRightClick(WPARAM wParam, PMOUSEHOOKSTRUCT pmouse) {
     return 0;
   }
 
-  HWND hwnd = WindowFromPoint(pmouse->pt);
-  NodePtr top_container_view = HandleFindBar(hwnd, pmouse->pt);
+  POINT pt = pmouse->pt;
+  HWND hwnd = WindowFromPoint(pt);
+  NodePtr top_container_view = HandleFindBar(hwnd, pt);
   if (!top_container_view) {
     return 0;
   }
 
-  bool is_on_one_tab = IsOnOneTab(top_container_view, pmouse->pt);
+  bool is_on_one_tab = IsOnOneTab(top_container_view, pt);
   bool keep_tab = IsNeedKeep(top_container_view);
 
   if (is_on_one_tab) {
@@ -173,13 +175,14 @@ int HandleMiddleClick(WPARAM wParam, PMOUSEHOOKSTRUCT pmouse) {
     return 0;
   }
 
-  HWND hwnd = WindowFromPoint(pmouse->pt);
-  NodePtr top_container_view = HandleFindBar(hwnd, pmouse->pt);
+  POINT pt = pmouse->pt;
+  HWND hwnd = WindowFromPoint(pt);
+  NodePtr top_container_view = HandleFindBar(hwnd, pt);
   if (!top_container_view) {
     return 0;
   }
 
-  bool is_on_one_tab = IsOnOneTab(top_container_view, pmouse->pt);
+  bool is_on_one_tab = IsOnOneTab(top_container_view, pt);
   bool keep_tab = IsNeedKeep(top_container_view);
 
   if (is_on_one_tab && keep_tab) {
@@ -198,10 +201,11 @@ bool HandleBookmark(WPARAM wParam, PMOUSEHOOKSTRUCT pmouse) {
     return false;
   }
 
-  HWND hwnd = WindowFromPoint(pmouse->pt);
+  POINT pt = pmouse->pt;
+  HWND hwnd = WindowFromPoint(pt);
   NodePtr top_container_view = GetTopContainerView(hwnd);
 
-  bool is_on_bookmark = IsOnBookmark(hwnd, pmouse->pt);
+  bool is_on_bookmark = IsOnBookmark(hwnd, pt);
   bool is_on_new_tab = IsOnNewTab(top_container_view);
 
   if (is_on_bookmark && !is_on_new_tab) {
