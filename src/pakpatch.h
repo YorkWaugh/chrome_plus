@@ -164,15 +164,15 @@ HANDLE WINAPI MyCreateFile(_In_ LPCTSTR lpFileName,
 }
 
 void PakPatch() {
-  DetourTransactionBegin();
-  DetourUpdateThread(GetCurrentThread());
-  DetourAttach((LPVOID*)&RawCreateFile, MyCreateFile);
-  auto status = DetourTransactionCommit();
-  if (status != NO_ERROR) {
-    DebugLog(L"Hook RawCreateFile failed %d", status);
-  } else {
-    DebugLog(L"Hook RawCreateFile success");
-  }
+  // DetourTransactionBegin();
+  // DetourUpdateThread(GetCurrentThread());
+  // DetourAttach((LPVOID*)&RawCreateFile, MyCreateFile);
+  // auto status = DetourTransactionCommit();
+  // if (status != NO_ERROR) {
+  //   DebugLog(L"Hook RawCreateFile failed %d", status);
+  // } else {
+  //   DebugLog(L"Hook RawCreateFile success");
+  // }
 }
 
 #endif  // PAKPATCH_H_
