@@ -13,7 +13,6 @@ HRESULT WINAPI MyPSStringFromPropertyKey(REFPROPERTYKEY pkey,
   HRESULT result = RawPSStringFromPropertyKey(pkey, psz, cch);
   if (SUCCEEDED(result)) {
     if (pkey == PKEY_AppUserModel_ID) {
-      // DebugLog(L"MyPSStringFromPropertyKey %s", psz);
       return -1;
     }
   }
