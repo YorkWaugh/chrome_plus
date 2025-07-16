@@ -7,6 +7,7 @@ set_warnings("more")
 add_defines("WIN32", "_WIN32", "UNICODE", "_UNICODE")
 add_cxflags("/utf-8")
 set_languages("c++20")
+set_fpmodels("precise") -- Default
 
 if is_mode("release") then
     set_exceptions("none")
@@ -21,12 +22,9 @@ if is_mode("debug") then
     set_runtimes("MTd")
     set_symbols("debug")
     add_defines("_DEBUG")
-    add_cxflags("/Od", "/MP", "/fp:precise")
+    add_cxflags("/MP")
     add_ldflags("/DYNAMICBASE")
 end
-
--- add_links("gdiplus", "kernel32", "user32", "gdi32", "winspool", "comdlg32")
--- add_links("advapi32", "shell32", "ole32", "oleaut32", "uuid", "odbc32", "odbccp32")
 
 target("detours")
     set_kind("static")
@@ -40,7 +38,7 @@ target("chrome_plus")
     add_deps("detours")
     add_files("src/*.cc")
     add_files("src/*.rc")
-    add_links("kernel32", "user32", "shell32", "oleaut32", "propsys", "shlwapi", "crypt32", "advapi32", "netapi32", "ole32", "oleacc")
+    add_links("onecore", "propsys", "oleacc")
     after_build(function (target)
         if is_mode("release") then
             for _, file in ipairs(os.files("$(builddir)/release/*")) do
