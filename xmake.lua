@@ -26,8 +26,11 @@ if is_mode("debug") then
     add_ldflags("/DYNAMICBASE")
 end
 
-target("detours")
-set_kind("static")
+target("chrome_plus")
+    set_kind("shared")
+    set_targetdir("$(builddir)/$(mode)")
+    set_basename("version")
+
     add_includedirs("detours/src", {public = true})
     add_files(
         "detours/src/detours.cpp",
@@ -46,11 +49,6 @@ set_kind("static")
         add_files("detours/src/disolarm.cpp", "detours/src/disolarm64.cpp")
     end
 
-target("chrome_plus")
-    set_kind("shared")
-    set_targetdir("$(builddir)/$(mode)")
-    set_basename("version")
-    add_deps("detours")
     add_files("src/*.cc")
     add_files("src/*.rc")
     add_links("onecore", "propsys", "oleacc")
